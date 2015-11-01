@@ -60,28 +60,6 @@ try:
 except NameError:
     _unicode = False
 
-def AddStrColored(window, message):
-    if not curses.has_colors:
-        window.addstr(message)
-
-    color = 0
-    parse_color = False
-    for ch in message:
-        val = ord( ch )
-        if parse_color:
-            if val >= ord('0') and val <= ord('7'):
-                color = val - ord('0')
-                if color == 7:
-                    color = 0
-            else:
-                window.addch('^', curses.color_pair(color))
-                window.addch(ch, curses.color_pair(color))
-            parse_color = False
-        elif ch == '^':
-            parse_color = True
-        else:
-            window.addch(ch, curses.color_pair(color))
- 
 class CursesHandler(logging.Handler):
     def __init__(self, screen):
         logging.Handler.__init__(self)
@@ -90,25 +68,25 @@ class CursesHandler(logging.Handler):
         try:
             msg = self.format(record)
             screen = self.screen
-            fs = "\n%s"
+            fs = "%s\n"
             if not _unicode: #if no unicode support...
-                AddStrColored(screen, fs % msg)
+                AddStrFormatted(screen, fs % msg)
                 screen.refresh()
             else:
                 try:
                     if (isinstance(msg, unicode) ):
                         ufs = u'%s\n'
                         try:
-                            AddStrColored(screen, ufs % msg)
+                            AddStrFormatted(screen, ufs % msg)
                             screen.refresh()
                         except UnicodeEncodeError:
-                            AddStrColored(screen, (ufs % msg).encode(code))
+                            AddStrFormatted(screen, (ufs % msg).encode(code))
                             screen.refresh()
                     else:
-                        AddStrColored(screen, fs % msg)
+                        AddStrFormatted(screen, fs % msg)
                         screen.refresh()
                 except UnicodeError:
-                    AddStrColored(screen, fs % msg.encode("UTF-8"))
+                    AddStrFormatted(screen, fs % msg.encode("UTF-8"))
                     screen.refresh()
         except (KeyboardInterrupt, SystemExit):
             raise
@@ -324,6 +302,48 @@ class TestInput( unittest.TestCase ):
 HOST = 'tcp://127.0.0.1:27961'
 POLL_TIMEOUT = 100
 
+def AddStrColored(window, message, attributes):
+    if not curses.has_colors:
+        window.addstr(message)
+
+    color = 0
+    parse_color = False
+    for ch in message:
+        val = ord( ch )
+        if parse_color:
+            if val >= ord('0') and val <= ord('7'):
+                color = val - ord('0')
+                if color == 7:
+                    color = 0
+            else:
+                window.addch('^', curses.color_pair(color) | attributes)
+                window.addch(ch, curses.color_pair(color) | attributes)
+            parse_color = False
+        elif ch == '^':
+            parse_color = True
+        else:
+            window.addch(ch, curses.color_pair(color) | attributes)
+
+    window.refresh()
+ 
+def AddStrFormatted(window, message):
+    attributes = 0
+
+    # Strip unnecessary chars
+    message = message.replace("\\n", "")
+    message = message.replace(chr(25), "")
+
+    # Broadcast messages are in bold
+    if message[:10] == "broadcast:":
+        message = message[11:]
+        attributes = curses.A_BOLD
+
+    # Strip print statements
+    if message[:7] == "print \"":
+        message = message[7:-2] + "\n"
+
+    AddStrColored(window, message, attributes)
+
 def main(screen):
     # parse args
     parser = argparse.ArgumentParser( description = 'Verbose QuakeLive server statistics' )
@@ -427,7 +447,7 @@ def main(screen):
                     break
                 else:
                     if len( msg ) > 0:
-                        logger.info( repr( msg ) )
+                        AddStrFormatted(output_window, msg)
 
     except Exception as e:
         logger.info( e )
