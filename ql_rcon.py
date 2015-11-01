@@ -394,7 +394,7 @@ def main(screen):
     begin_y = maxy - 3; height = 1
     divider_window = curses.newwin(height, width, begin_y, begin_x)
     screen.refresh()
-    divider_window.hline('-', width)
+    divider_window.hline(curses.ACS_HLINE, width)
     divider_window.refresh()
 
     # redirect logging to the log window
@@ -420,7 +420,7 @@ def main(screen):
             socket.zap_domain = 'rcon'
         socket.setsockopt( zmq.IDENTITY, args.identity )
         socket.connect( args.host )
-        print( 'Connecting to %s' % args.host )
+        logger.info( 'Connecting to %s' % args.host )
         while ( True ):
             event = socket.poll( POLL_TIMEOUT )
             event_monitor = _checkMonitor( monitor )
@@ -447,7 +447,10 @@ def main(screen):
                     break
                 else:
                     if len( msg ) > 0:
+                        y,x = curses.getsyx()
                         AddStrFormatted(output_window, msg)
+                        curses.setsyx(y,x)
+                        curses.doupdate()
 
     except Exception as e:
         logger.info( e )
