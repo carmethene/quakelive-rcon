@@ -337,7 +337,10 @@ def main(screen):
     curses.start_color()
     curses.cbreak()
     curses.setsyx(-1, -1)
-    curses.curs_set(0)
+    try:
+        curses.curs_set(0)
+    except:
+        pass
     screen.addstr("Quake Live rcon: %s" % args.host)
     screen.refresh()
     maxy, maxx = screen.getmaxyx()
