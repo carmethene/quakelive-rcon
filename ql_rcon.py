@@ -431,7 +431,7 @@ def main(screen):
 
             while ( not q.empty() ):
                 l = q.get()
-                logger.info( 'sending command: %s' % repr( l ) )
+                # logger.info( 'sending command: %s' % repr( l ) )
                 socket.send( l )
 
             if ( event == 0 ):
