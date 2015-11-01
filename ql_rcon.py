@@ -423,7 +423,8 @@ def main(screen):
                     logger.info( e )
                     break
                 else:
-                    logger.info( repr( msg ) )
+                    if len( msg ) > 0:
+                        logger.info( repr( msg ) )
 
     except Exception as e:
         logger.info( e )
