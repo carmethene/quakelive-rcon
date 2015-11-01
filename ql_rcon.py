@@ -92,7 +92,7 @@ class CursesHandler(logging.Handler):
             screen = self.screen
             fs = "\n%s"
             if not _unicode: #if no unicode support...
-                screen.addstr(fs % msg)
+                AddStrColored(screen, fs % msg)
                 screen.refresh()
             else:
                 try:
