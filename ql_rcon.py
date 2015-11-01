@@ -386,7 +386,7 @@ def main(screen):
     screen.addstr(begin_y, begin_x - 2, '>')
     screen.refresh()
     input_window.idlok(True)
-    input_window.leaveok(True)
+    input_window.leaveok(False)
     input_window.refresh()
 
     # solid divider line between input and output
