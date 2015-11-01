@@ -60,6 +60,28 @@ try:
 except NameError:
     _unicode = False
 
+def AddStrColored(window, message):
+    if not curses.has_colors:
+        window.addstr(message)
+
+    color = 0
+    parse_color = False
+    for ch in message:
+        val = ord( ch )
+        if parse_color:
+            if val >= ord('0') and val <= ord('7'):
+                color = val - ord('0')
+                if color == 7:
+                    color = 0
+            else:
+                window.addch('^', curses.color_pair(color))
+                window.addch(ch, curses.color_pair(color))
+            parse_color = False
+        elif ch == '^':
+            parse_color = True
+        else:
+            window.addch(ch, curses.color_pair(color))
+ 
 class CursesHandler(logging.Handler):
     def __init__(self, screen):
         logging.Handler.__init__(self)
@@ -77,16 +99,16 @@ class CursesHandler(logging.Handler):
                     if (isinstance(msg, unicode) ):
                         ufs = u'%s\n'
                         try:
-                            screen.addstr(ufs % msg)
+                            AddStrColored(screen, ufs % msg)
                             screen.refresh()
                         except UnicodeEncodeError:
-                            screen.addstr((ufs % msg).encode(code))
+                            AddStrColored(screen, (ufs % msg).encode(code))
                             screen.refresh()
                     else:
-                        screen.addstr(fs % msg)
+                        AddStrColored(screen, fs % msg)
                         screen.refresh()
                 except UnicodeError:
-                    screen.addstr(fs % msg.encode("UTF-8"))
+                    AddStrColored(screen, fs % msg.encode("UTF-8"))
                     screen.refresh()
         except (KeyboardInterrupt, SystemExit):
             raise
@@ -312,12 +334,17 @@ def main(screen):
 
     # set up screen
     screen.nodelay(1)
-    curses.curs_set(0)
+    curses.start_color()
     curses.cbreak()
     curses.setsyx(-1, -1)
+    curses.curs_set(0)
     screen.addstr("Quake Live rcon: %s" % args.host)
     screen.refresh()
     maxy, maxx = screen.getmaxyx()
+
+    # set up colors
+    for i in range(1,7):
+        curses.init_pair(i, i, 0)
 
     # this window holds the log and server output
     begin_x = 2; width = maxx - 4
