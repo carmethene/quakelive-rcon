@@ -17,6 +17,7 @@ import zmq
 import curses
 import curses.textpad
 import curses.wrapper
+import signal
 
 import unittest
 
@@ -70,23 +71,23 @@ class CursesHandler(logging.Handler):
             screen = self.screen
             fs = "%s\n"
             if not _unicode: #if no unicode support...
-                AddStrFormatted(screen, fs % msg)
+                PrintMessageFormatted(screen, fs % msg)
                 screen.refresh()
             else:
                 try:
                     if (isinstance(msg, unicode) ):
                         ufs = u'%s\n'
                         try:
-                            AddStrFormatted(screen, ufs % msg)
+                            PrintMessageFormatted(screen, ufs % msg)
                             screen.refresh()
                         except UnicodeEncodeError:
-                            AddStrFormatted(screen, (ufs % msg).encode(code))
+                            PrintMessageFormatted(screen, (ufs % msg).encode(code))
                             screen.refresh()
                     else:
-                        AddStrFormatted(screen, fs % msg)
+                        PrintMessageFormatted(screen, fs % msg)
                         screen.refresh()
                 except UnicodeError:
-                    AddStrFormatted(screen, fs % msg.encode("UTF-8"))
+                    PrintMessageFormatted(screen, fs % msg.encode("UTF-8"))
                     screen.refresh()
         except (KeyboardInterrupt, SystemExit):
             raise
@@ -302,7 +303,7 @@ class TestInput( unittest.TestCase ):
 HOST = 'tcp://127.0.0.1:27961'
 POLL_TIMEOUT = 100
 
-def AddStrColored(window, message, attributes):
+def PrintMessageColored(window, message, attributes):
     if not curses.has_colors:
         window.addstr(message)
 
@@ -326,7 +327,7 @@ def AddStrColored(window, message, attributes):
 
     window.refresh()
  
-def AddStrFormatted(window, message):
+def PrintMessageFormatted(window, message):
     attributes = 0
 
     # Strip unnecessary chars
@@ -342,25 +343,19 @@ def AddStrFormatted(window, message):
     if message[:7] == "print \"":
         message = message[7:-2] + "\n"
 
-    AddStrColored(window, message, attributes)
+    PrintMessageColored(window, message, attributes)
 
-def main(screen):
-    # parse args
-    parser = argparse.ArgumentParser( description = 'Verbose QuakeLive server statistics' )
-    parser.add_argument( '--host', default = HOST, help = 'ZMQ URI to connect to. Defaults to %s' % HOST )
-    parser.add_argument( '--password', required = False )
-    parser.add_argument( '--identity', default = uuid.uuid1().hex, help = 'Specify the socket identity. Random UUID used by default' )
-    args = parser.parse_args()
+def InitWindows(screen, args):
+    # reset curses
+    logger.handlers = []
+    curses.endwin()
 
     # set up screen
+    curses.initscr()
     screen.nodelay(1)
     curses.start_color()
     curses.cbreak()
     curses.setsyx(-1, -1)
-    try:
-        curses.curs_set(0)
-    except:
-        pass
     screen.addstr("Quake Live rcon: %s" % args.host)
     screen.refresh()
     maxy, maxx = screen.getmaxyx()
@@ -409,7 +404,20 @@ def main(screen):
     # finalize layout
     screen.refresh()
 
-    # up we go!
+    return input_window, output_window
+
+def main(screen):
+    # parse args
+    parser = argparse.ArgumentParser( description = 'Verbose QuakeLive server statistics' )
+    parser.add_argument( '--host', default = HOST, help = 'ZMQ URI to connect to. Defaults to %s' % HOST )
+    parser.add_argument( '--password', required = False )
+    parser.add_argument( '--identity', default = uuid.uuid1().hex, help = 'Specify the socket identity. Random UUID used by default' )
+    args = parser.parse_args()
+
+    # set up curses, logging, etc
+    input_window, output_window = InitWindows(screen, args)
+
+    # ready to go!
     logger.info('zmq python bindings %s, libzmq version %s' % ( repr( zmq.__version__ ), zmq.zmq_version() ) )
 
     q = setupInputQueue(input_window)
@@ -451,8 +459,9 @@ def main(screen):
                     break
                 else:
                     if len( msg ) > 0:
+                        # store/return cursor position so that it stays over the input box as we print output
                         y,x = curses.getsyx()
-                        AddStrFormatted(output_window, msg)
+                        PrintMessageFormatted(output_window, msg)
                         curses.setsyx(y,x)
                         curses.doupdate()
 
