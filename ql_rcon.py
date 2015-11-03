@@ -369,6 +369,10 @@ def main(screen):
     for i in range(1,7):
         curses.init_pair(i, i, 0)
 
+    # bugfix: 5 and 6 are swapped in Quake from the standard terminal colours
+    curses.init_pair(5, 6, 0)
+    curses.init_pair(6, 5, 0)
+
     # this window holds the log and server output
     begin_x = 2; width = maxx - 4
     begin_y = 2; height = maxy - 5
