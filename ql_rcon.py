@@ -21,6 +21,9 @@ import signal
 
 import unittest
 
+import locale
+locale.setlocale(locale.LC_ALL, '')
+
 def _readSocketEvent( msg ):
     # NOTE: little endian - hopefully that's not platform specific?
     event_id = struct.unpack( '<H', msg[:2] )[0]
@@ -187,7 +190,7 @@ class Test( unittest.TestCase ):
             server_rep.send( 'ack' ) # REQ/REP always have to ack
 
 # summarizes a working setup and details QL's implementation
-# based on http://zguide2.zeromq.org/py%3aall#Asynchronous-Client-Server
+# based on http://zguide2.zeromq.org/py%3aall#Asyndchronous-Client-Server
 class TestRcon( unittest.TestCase ):
     def test( self ):
         timeline = time.time()
