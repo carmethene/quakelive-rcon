@@ -4,6 +4,3 @@ ql_rcon.py - outputs to a curses window with terminal colour support
 irc_rcon.py - outputs to stdout but with mIRC colour codes, e.g. for use with 'eval' in irssi
 
 Both scripts significantly clean up the output vs the base version
-
-- For questions, carmethene@gmail.com or carmethene in #quakelive on Quakenet IRC
-
